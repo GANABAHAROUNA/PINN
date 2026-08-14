@@ -6,6 +6,8 @@ import plotly.graph_objects as go
 import warnings
 warnings.filterwarnings("ignore")
 
+
+
 # ============================================================================
 # CLASS 1: NEURAL NETWORK
 # ============================================================================
@@ -92,7 +94,7 @@ print(f"u_star shape: {u_star.shape}")
 # ============================================================================
 class PINN():
     def __init__(self, X, u, lb, ub, physics, lambda_physics=0.001, 
-                 X_boundary=None, u_boundary=None, lambda_boundary=1):
+                 X_boundary=None, u_boundary=None, lambda_boundary=1.0, lambda_data = 1.0):
         """
         Args:
             X: Training coordinates (interior points)
@@ -110,6 +112,7 @@ class PINN():
         self.physics = physics
         self.lambda_physics = lambda_physics
         self.lambda_boundary = lambda_boundary
+        self.lambda_data = lambda_data
         
         # Interior points (training data)
         self.x = torch.tensor(X[:, 0:1], requires_grad=True).float()
@@ -194,7 +197,7 @@ class PINN():
             loss_boundary = torch.mean((self.u_b - u_b_pred)**2)
         
         # Total weighted loss
-        loss = loss_data + self.lambda_physics * loss_physics + self.lambda_boundary * loss_boundary
+        loss = self.lambda_data*loss_data + self.lambda_physics * loss_physics + self.lambda_boundary * loss_boundary
         
         return loss, loss_data, loss_physics, loss_boundary
     
@@ -311,16 +314,14 @@ print("  ✅ PDE: u_t + u*u_x - (0.01/π)*u_xx = 0")
 print("  ✅ Initial Condition: u(0,x) = -sin(πx)")
 print("  ✅ Boundary Conditions: u(t,-1) = u(t,1) = 0")
 print("="*60)
-
-
-
 model_pinn = PINN(
     X_train_np, u_train_np, lb[0], ub[0], 
     physics=True, 
     lambda_physics=1.0,
     X_boundary=X_boundary,
     u_boundary=u_boundary,
-    lambda_boundary=1.0
+    lambda_boundary=1.0,
+    lambda_data=1.0
 )
 pinn_loss, pinn_data, pinn_phys, pinn_boundary = model_pinn.train(30000)
 
@@ -341,7 +342,8 @@ model_nn = PINN(
     lambda_physics=0,
     X_boundary=None,
     u_boundary=None,
-    lambda_boundary=0
+    lambda_boundary=0,
+    lambda_data=1.0
 )
 nn_loss, nn_data, nn_phys, nn_boundary = model_nn.train(30000)
 
@@ -407,6 +409,8 @@ u_nn = model_nn.predict(X_test_full)
 u_pinn_grid = u_pinn.reshape(usol.shape)
 u_nn_grid = u_nn.reshape(usol.shape)
 
+
+
 # True Solution
 fig = go.Figure()
 fig.add_trace(go.Heatmap(
@@ -423,6 +427,8 @@ fig.update_layout(
     height=500
 )
 fig.show()
+
+
 
 # PINN Prediction
 fig = go.Figure()
@@ -441,6 +447,8 @@ fig.update_layout(
 )
 fig.show()
 
+
+
 # Vanilla NN Prediction
 fig = go.Figure()
 fig.add_trace(go.Heatmap(
@@ -457,6 +465,8 @@ fig.update_layout(
     height=500
 )
 fig.show()
+
+
 
 # Error Comparison
 pinn_mse = np.mean((usol - u_pinn_grid)**2)
@@ -476,6 +486,8 @@ fig.update_layout(
     height=500
 )
 fig.show()
+
+
 
 fig = go.Figure()
 fig.add_trace(go.Heatmap(
@@ -519,10 +531,4 @@ print("   - PDE: u_t + u*u_x - (0.01/π)*u_xx = 0")
 print("   - Initial: u(0,x) = -sin(πx)")
 print("   - Boundary: u(t,-1) = u(t,1) = 0")
 print("="*60)
-
-
-
-
-
-
 
