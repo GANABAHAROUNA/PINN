@@ -323,7 +323,10 @@ model_pinn = PINN(
     lambda_boundary=1.0,
     lambda_data=1.0
 )
-pinn_loss, pinn_data, pinn_phys, pinn_boundary = model_pinn.train(30000)
+pinn_loss, pinn_data, pinn_phys, pinn_boundary = model_pinn.train(1000)
+# After training
+torch.save(model_pinn.network.state_dict(), 'pinn_model.pth')
+print("✅ Model saved as pinn_model.pth")
 
 
 
@@ -345,7 +348,9 @@ model_nn = PINN(
     lambda_boundary=0,
     lambda_data=1.0
 )
-nn_loss, nn_data, nn_phys, nn_boundary = model_nn.train(30000)
+nn_loss, nn_data, nn_phys, nn_boundary = model_nn.train(1000)
+torch.save(model_nn.network.state_dict(), 'nn_model.pth')
+print("✅ Model saved as nn_model.pth")
 
 
 
